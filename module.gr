@@ -2,6 +2,10 @@ module WasmModule
 
 from "list" include List
 from "buffer" include Buffer
+from "array" include Array
+from "number" include Number
+from "uint32" include Uint32
+from "uint8" include Uint8
 
 from "./section.gr" include Section
 
@@ -24,15 +28,74 @@ provide let addSection = (section, mod) => {
     mod.sections = List.append(mod.sections, [section])
 }
 
+provide let addCustomSection = (name, raw, mod) => {
+    let section = Section.make(Section.CustomID)
+    section.contents = Some(Section.CustomContent(name, raw))
+
+    addSection(section, mod)
+}
+
+provide let addType = (inputs, outputs, mod) => {
+    let section = List.find(s => match(s.contents) {
+        Some(TypesContent(vec)) => true,
+        _ => false
+    }, mod.sections)
+
+    let section = match(section) {
+        Some(s) => s,
+        None => Section.make(TypeID)
+    }
+
+    let typeDef = {
+                    inputs: inputs,
+                    outputs: outputs
+                }
+
+    match(section.contents) {
+        Some(TypesContent(types)) => {
+            section.contents = Some(TypesContent(
+                Array.append(types, [> typeDef])))
+
+            section.size = Uint32.fromNumber(Array.length(types) + 1)
+        },
+        None => {
+            section.contents = Some(TypesContent([> typeDef]))
+            section.size = 1ul
+
+            addSection(section, mod)
+        },
+        _ => fail("error")
+    }
+}
+
+let marshalArray = (arr, callback, buffer) => {
+    Buffer.addUint8(Uint8.fromNumber(Array.length(arr)), buffer)
+
+    Array.forEach(e => {
+        callback(e)
+    }, arr)
+}
 
 let marshalSection = (section, buffer) => {
     Buffer.addUint8(Section.sectionIdToNumber(section.id), buffer)
     Buffer.addUint32(section.size, buffer)
 
     match(section.contents) {
-        Some(Custom(name, raw)) => {
+        Some(CustomContent(name, raw)) => {
             Buffer.addString(name, buffer)
             Buffer.addBytes(raw, buffer)
+        },
+        Some(TypesContent(definitions)) => {
+            marshalArray(definitions, (el) => {
+                let inner = (arr) => {
+                    marshalArray(arr, (t) => {
+                        Buffer.addUint8(valueTypeToNum(t), buffer)
+                    }, buffer)
+                }
+
+                inner(el.inputs)
+                inner(el.outputs)
+            }, buffer)
         },
         None => { ignore(0) },
         _ => fail("invalid section content")

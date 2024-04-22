@@ -1,47 +1,66 @@
 module Section
 
 from "uint32" include Uint32
+from "uint8" include Uint8
 
 provide enum SectionId {
-    Custom,
-    Type,
-    Import,
-    Function,
-    Table,
-    Memory,
-    Global,
-    Export,
-    Start,
-    Element,
-    Code,
-    Data,
-    DataCount
+    CustomID,
+    TypeID,
+    ImportID,
+    FunctionID,
+    TableID,
+    MemoryID,
+    GlobalID,
+    ExportID,
+    StartID,
+    ElementID,
+    CodeID,
+    DataID,
+    DataCountID
 }
 
-abstract enum FuncType {
-    Invalid
+provide enum ValueType {
+    I32,
+    I64,
+    F32,
+    F64
+}
+
+provide let valueTypeToNum = (valueType: ValueType) => {
+    Uint8.fromNumber(match(valueType) {
+        I32 => 0x7F,
+        I64 => 0x7E,
+        F32 => 0x7D,
+        F64 => 0x7C,
+        _ => fail("Unkown Value type")
+    })
+}
+
+provide record TypeDeclaration {
+    inputs: Array<ValueType>,
+    outputs: Array<ValueType>
 }
 
 provide enum SectonContent {
-    Custom(String, Bytes),
-    Type(Array<FuncType>)
+    CustomContent(String, Bytes),
+    TypesContent(Array<TypeDeclaration>)
 }
 
 provide let sectionIdToNumber = (id: SectionId) => {
     match(id) {
-        Custom => 0us,
-        Type => 1us,
-        Import => 2us,
-        Function => 3us,
-        Table => 4us,
-        Memory => 5us,
-        Global => 6us,
-        Export => 7us,
-        Start => 8us,
-        Element => 9us,
-        Code => 10us,
-        Data => 11us,
-        DataCount => 12us
+        CustomID => 0us,
+        TypeID => 1us,
+        ImportID => 2us,
+        FunctionID => 3us,
+        TableID => 4us,
+        MemoryID => 5us,
+        GlobalID => 6us,
+        ExportID => 7us,
+        StartID => 8us,
+        ElementID => 9us,
+        CodeID => 10us,
+        DataID => 11us,
+        DataCountID => 12us
     }
 }
 

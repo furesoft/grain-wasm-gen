@@ -1,0 +1,60 @@
+module Section
+
+from "uint32" include Uint32
+
+provide enum SectionId {
+    Custom,
+    Type,
+    Import,
+    Function,
+    Table,
+    Memory,
+    Global,
+    Export,
+    Start,
+    Element,
+    Code,
+    Data,
+    DataCount
+}
+
+abstract enum FuncType {
+    Invalid
+}
+
+provide enum SectonContent {
+    Custom(String, Bytes),
+    Type(Array<FuncType>)
+}
+
+provide let sectionIdToNumber = (id: SectionId) => {
+    match(id) {
+        Custom => 0us,
+        Type => 1us,
+        Import => 2us,
+        Function => 3us,
+        Table => 4us,
+        Memory => 5us,
+        Global => 6us,
+        Export => 7us,
+        Start => 8us,
+        Element => 9us,
+        Code => 10us,
+        Data => 11us,
+        DataCount => 12us
+    }
+}
+
+provide record Section {
+    id: SectionId,
+    mut size: Uint32,
+    mut contents: Option<SectonContent>
+}
+
+provide let make = (id) => {
+    {
+        id: id,
+        size: 0ul,
+        contents: None
+    }
+}

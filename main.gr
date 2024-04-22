@@ -1,0 +1,29 @@
+module Main
+
+from "./section.gr" include Section
+from "./module.gr" include WasmModule
+from "wasi/file" include File
+from "result" include Result
+
+let mod = WasmModule.make()
+
+let startSection = Section.make(Section.Custom)
+
+WasmModule.addSection(startSection, mod)
+
+let raw = WasmModule.marshal(mod)
+
+//Todo: fix file writing
+let fd = File.open("./result.wasm", [File.Create], [File.FdWrite], [File.FdWrite], [File.Append])
+
+if(Result.isOk(fd)) {
+    let writtenResult = File.fdWrite(Result.unwrap(fd), raw)
+
+    match(writtenResult) {
+        Ok(written) => ignore(written),
+        Err(err) => print(err)
+    }
+}
+else {
+    print(fd)
+}

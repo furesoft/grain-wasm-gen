@@ -1,0 +1,53 @@
+module WasmModule
+
+from "list" include List
+from "buffer" include Buffer
+
+from "./section.gr" include Section
+
+use List.*
+use Section.*
+
+provide record Module {
+    mut sections: List<Section>,
+    version: Uint32
+}
+
+provide let make = () => {
+    {
+        sections: [],
+        version: 1ul
+    }
+}
+
+provide let addSection = (section, mod) => {
+    mod.sections = List.append(mod.sections, [section])
+}
+
+
+let marshalSection = (section, buffer) => {
+    Buffer.addUint8(Section.sectionIdToNumber(section.id), buffer)
+    Buffer.addUint32(section.size, buffer)
+
+    match(section.contents) {
+        Some(Custom(name, raw)) => {
+            Buffer.addString(name, buffer)
+            Buffer.addBytes(raw, buffer)
+        },
+        None => { ignore(0) },
+        _ => fail("invalid section content")
+    }
+}
+
+provide let marshal = (mod) => {
+    let buffer = Buffer.make(25)
+
+    Buffer.addString("\0asm", buffer)
+    Buffer.addUint32(mod.version, buffer)
+
+    List.forEach(section => {
+        marshalSection(section, buffer)
+    }, mod.sections)
+
+    Buffer.toBytes(buffer)
+}
